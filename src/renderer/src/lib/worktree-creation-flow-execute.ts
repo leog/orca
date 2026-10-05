@@ -247,6 +247,7 @@ export async function executeWorktreeCreation(
     const hasExplicitTerminalWork = Boolean(
       startupOpt || result.setup || preparedRequest.issueCommand || result.defaultTabs
     )
+    const callerProvidesSurface = preparedRequest.agent !== null || setupIsOnlySurface
     if (preparedRequest.agent === null || hasExplicitTerminalWork) {
       try {
         primaryTabId = ensureWorktreeHasInitialTerminal(
@@ -258,9 +259,7 @@ export async function executeWorktreeCreation(
           result.defaultTabs,
           {
             activateCreatedTabs: false,
-            ...(preparedRequest.agent !== null || setupIsOnlySurface
-              ? { callerProvidesSurface: true }
-              : {}),
+            ...(callerProvidesSurface ? { callerProvidesSurface: true } : {}),
             ...(backendSpawned ? { backendStartupTerminalSpawned: true } : {})
           }
         )

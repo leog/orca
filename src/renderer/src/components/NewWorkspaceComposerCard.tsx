@@ -40,7 +40,7 @@ import { useComposerFileDragOver } from './new-workspace/use-composer-file-drag-
 import {
   buildDefaultAgentSettingsUpdate,
   isNewWorkspaceSetupOnlyDefault
-} from '@/lib/new-workspace-setup-only'
+} from '../../../shared/new-workspace-setup-only'
 
 // Why lazy: this pulls the ~41 KB project-location browser onto the boot graph, and nothing
 // reaches it without an explicit "Set location" click. Shared with the warm below so both hit

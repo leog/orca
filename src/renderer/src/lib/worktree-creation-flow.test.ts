@@ -646,6 +646,31 @@ describe('staged background worktree creation', () => {
     )
   })
 
+  it('seeds only the setup tab for None when the user moved on before completion', async () => {
+    store.activeView = 'tasks'
+    const setup = { runnerScriptPath: '/repo/.orca/setup.sh', envVars: {} }
+    store.createWorktree.mockResolvedValueOnce({
+      worktree: { id: 'wt-1', repoId: 'repo-1', path: '/repo/wt-1' },
+      setup
+    })
+
+    continueBackgroundWorktreeCreation('creation-1', makeRequest({ setupOnly: true }), {
+      revealCreationSurface: false
+    })
+
+    await vi.waitFor(() =>
+      expect(ensureWorktreeHasInitialTerminal).toHaveBeenCalledWith(
+        store,
+        'wt-1',
+        undefined,
+        setup,
+        undefined,
+        undefined,
+        { activateCreatedTabs: false, callerProvidesSurface: true }
+      )
+    )
+  })
+
   it('seeds the chat-composer launch draft on completion for draft launches', async () => {
     store.activeView = 'terminal'
     store.activePendingCreationId = 'creation-1'

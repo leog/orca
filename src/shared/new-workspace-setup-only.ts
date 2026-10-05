@@ -1,5 +1,5 @@
-import type { GlobalSettings } from '../../../shared/global-settings-types'
-import type { TuiAgent } from '../../../shared/tui-agent'
+import type { GlobalSettings } from './global-settings-types'
+import type { TuiAgent } from './tui-agent'
 
 type DefaultAgentSettings = Pick<GlobalSettings, 'defaultTuiAgent' | 'newWorkspaceSetupOnly'>
 

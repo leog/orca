@@ -26,7 +26,7 @@ import type { WorkspaceStatus } from '../../../shared/worktree/types'
 import type { TaskSourceContext } from '../../../shared/task-source-context'
 import { translate } from '@/i18n/i18n'
 import { getWorkspaceComposerInitialFocusTarget } from '@/lib/workspace-composer-initial-focus'
-import { isNewWorkspaceSetupOnlyDefault } from '@/lib/new-workspace-setup-only'
+import { isNewWorkspaceSetupOnlyDefault } from '../../../shared/new-workspace-setup-only'
 import { getFolderWorkspacePrimaryActionLabel } from '@/components/sidebar/folder-workspace-composer-helpers'
 
 // Why: match App-level AddRepoDialog loading — the add flow is off the hot

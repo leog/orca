@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import type { CreateWorktreeResult } from '../../shared/worktree/create-types'
-import type { GlobalSettings } from '../../shared/global-settings-types'
 import { buildObservedSetupCommand } from './orchestration/setup-completion-signal'
 import { buildSetupRunnerCommand } from '../../shared/setup-runner-command'
+import { isNewWorkspaceSetupOnlyDefault } from '../../shared/new-workspace-setup-only'
 import type { RuntimeStore } from './runtime-store-contract'
 
 type TerminalResult = { handle: string; tabId?: string | null }
@@ -95,10 +95,14 @@ export async function provisionWorktreeTerminals(
       surfacing
     )
     let primaryHandle = args.primaryTerminalHandle ?? defaultHandles[0] ?? null
-    const setupLaunchMode =
-      (host.getSettings() as Partial<Pick<GlobalSettings, 'setupScriptLaunchMode'>>)
-        .setupScriptLaunchMode ?? 'new-tab'
-    if (!args.hasStartupTerminal && !primaryHandle) {
+    const settings = host.getSettings()
+    const setupLaunchMode = settings.setupScriptLaunchMode ?? 'new-tab'
+    // Why: "None" default leaves the Setup tab as the only surface; a split still needs a shell to split from.
+    const setupOnly =
+      args.setup !== undefined &&
+      setupLaunchMode === 'new-tab' &&
+      isNewWorkspaceSetupOnlyDefault(settings)
+    if (!args.hasStartupTerminal && !primaryHandle && !setupOnly) {
       primaryHandle = (await host.createTerminal(args.worktreeSelector, surfacing)).handle
     }
     if (args.setup) {

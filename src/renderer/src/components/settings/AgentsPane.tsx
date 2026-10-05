@@ -53,7 +53,7 @@ import { AgentDefaultSetting } from './AgentDefaultSetting'
 import {
   buildDefaultAgentSettingsUpdate,
   isNewWorkspaceSetupOnlyDefault
-} from '@/lib/new-workspace-setup-only'
+} from '../../../../shared/new-workspace-setup-only'
 import { AgentDetectionCatalog } from './AgentDetectionCatalog'
 
 export {

@@ -162,6 +162,8 @@ export async function executeWorktreeCreation(
   // workspace) is handed it; anyone who moved on (another workspace or an app
   // view) keeps their place and gets a toast instead (#9944).
   const shouldActivateOnCompletion = isCreatedWorkspaceInView(creationId, worktree.id)
+  // Why: "None" leaves setup as the only surface; without a setup run it falls back to a shell.
+  const setupIsOnlySurface = preparedRequest.setupOnly === true && result.setup !== undefined
 
   // Why: the worktree exists past this point and nothing awaits this caller, so
   // each follow-up step is best-effort — an escaped throw would strand the
@@ -178,8 +180,7 @@ export async function executeWorktreeCreation(
         ...(startupOpt ? { startup: startupOpt } : {}),
         ...(preparedRequest.issueCommand ? { issueCommand: preparedRequest.issueCommand } : {}),
         ...(backendSpawned ? { backendStartupTerminalSpawned: true } : {}),
-        // Why: "None" leaves setup as the only surface; without a setup run it falls back to a shell.
-        ...(preparedRequest.setupOnly && result.setup ? { providesInitialSurface: true } : {})
+        ...(setupIsOnlySurface ? { providesInitialSurface: true } : {})
       })
       primaryTabId = activation === false ? null : activation.primaryTabId
     } catch (error) {
@@ -248,7 +249,9 @@ export async function executeWorktreeCreation(
           result.defaultTabs,
           {
             activateCreatedTabs: false,
-            ...(preparedRequest.agent !== null ? { callerProvidesSurface: true } : {}),
+            ...(preparedRequest.agent !== null || setupIsOnlySurface
+              ? { callerProvidesSurface: true }
+              : {}),
             ...(backendSpawned ? { backendStartupTerminalSpawned: true } : {})
           }
         )

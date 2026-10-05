@@ -44,7 +44,7 @@ import { runBackgroundWorktreeCreation } from '@/lib/worktree-creation-flow'
 import { translate } from '@/i18n/i18n'
 import { resolveQuickCreateLinkedWorkItemPrompt } from '@/lib/linked-work-item-context'
 import { buildQuickComposerStartup } from './quick-startup-plan'
-import { buildQuickCreationRequest } from './quick-creation-request'
+import { buildQuickCreationRequest, type QuickSubmitOptions } from './quick-creation-request'
 import type { PendingSmartGitHubSubmitResolution } from './source-selection-decisions'
 import { planAgentSessionLaunch } from '@/lib/agent-session-launch-plan'
 
@@ -87,7 +87,8 @@ export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
       workspaceNameSeed: string,
       workspaceRunContext: WorktreeCreationRequest['workspaceRunContext'],
       repoId: string,
-      selectedRepo: Repo
+      selectedRepo: Repo,
+      options?: QuickSubmitOptions
     ): Promise<void> => {
       const prepared = await prepareQuickSubmit(
         smartGitHubResolution,
@@ -256,7 +257,8 @@ export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
         launchDraftPrompt: quickDraftPrompt,
         promptDelivery,
         quickTelemetry,
-        suppressTerminalFocusOnCompletion: createMultiple
+        suppressTerminalFocusOnCompletion: createMultiple,
+        setupOnly: options?.setupOnly === true
       })
 
       if (isSubmissionCancelled()) {

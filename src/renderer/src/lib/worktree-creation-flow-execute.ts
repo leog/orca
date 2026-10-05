@@ -177,7 +177,9 @@ export async function executeWorktreeCreation(
         ...(result.defaultTabs ? { defaultTabs: result.defaultTabs } : {}),
         ...(startupOpt ? { startup: startupOpt } : {}),
         ...(preparedRequest.issueCommand ? { issueCommand: preparedRequest.issueCommand } : {}),
-        ...(backendSpawned ? { backendStartupTerminalSpawned: true } : {})
+        ...(backendSpawned ? { backendStartupTerminalSpawned: true } : {}),
+        // Why: "None" leaves setup as the only surface; without a setup run it falls back to a shell.
+        ...(preparedRequest.setupOnly && result.setup ? { providesInitialSurface: true } : {})
       })
       primaryTabId = activation === false ? null : activation.primaryTabId
     } catch (error) {

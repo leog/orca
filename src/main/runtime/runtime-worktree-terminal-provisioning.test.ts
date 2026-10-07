@@ -152,6 +152,19 @@ describe('provisionWorktreeTerminals with the "None" default', () => {
     expect(titles()).toEqual([undefined])
   })
 
+  it('opens a blank terminal when the Setup tab fails to spawn', async () => {
+    const { host, titles } = createHost(none)
+    const createTerminal = vi.mocked(host.createTerminal)
+    createTerminal.mockRejectedValueOnce(new Error('spawn failed'))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    await expect(provisionWithSetup(host)).resolves.toEqual({
+      setupSpawned: false,
+      setupTerminalHandle: null
+    })
+    expect(titles()).toEqual(['Setup', undefined])
+    warn.mockRestore()
+  })
+
   it('keeps the shell a split setup needs', async () => {
     const { host, titles } = createHost({ ...none, setupScriptLaunchMode: 'split-vertical' })
     await provisionWithSetup(host)

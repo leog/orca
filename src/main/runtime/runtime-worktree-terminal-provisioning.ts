@@ -118,6 +118,7 @@ export async function provisionWorktreeTerminals(
   const surfacing = args.surfaceOwner === false ? { surfaceOwner: false as const } : {}
   let setupSpawned = false
   let setupTerminalHandle: string | null = null
+  let shellSkippedForSetup = false
   try {
     const defaultHandles = await createWorktreeDefaultTabTerminals(
       host,
@@ -135,8 +136,12 @@ export async function provisionWorktreeTerminals(
       args.setup !== undefined &&
       setupLaunchMode === 'new-tab' &&
       isNewWorkspaceSetupOnlyDefault(settings)
-    if (!args.hasStartupTerminal && !primaryHandle && !setupOnly) {
-      primaryHandle = (await host.createTerminal(args.worktreeSelector, surfacing)).handle
+    if (!args.hasStartupTerminal && !primaryHandle) {
+      if (setupOnly) {
+        shellSkippedForSetup = true
+      } else {
+        primaryHandle = (await host.createTerminal(args.worktreeSelector, surfacing)).handle
+      }
     }
     if (args.setup) {
       const completionToken =
@@ -187,6 +192,15 @@ export async function provisionWorktreeTerminals(
     console.warn(
       `[worktree-create] Failed to create setup/default terminals for ${args.worktreePath}: ${message}`
     )
+    // Why: "None" skipped the shell on the promise of a Setup tab; without one the workspace would have no terminal.
+    if (shellSkippedForSetup && !setupSpawned) {
+      await host.createTerminal(args.worktreeSelector, surfacing).catch((fallbackError: unknown) => {
+        console.warn(
+          `[worktree-create] Failed to open a fallback terminal for ${args.worktreePath}:`,
+          fallbackError
+        )
+      })
+    }
   }
   return { setupSpawned, setupTerminalHandle }
 }

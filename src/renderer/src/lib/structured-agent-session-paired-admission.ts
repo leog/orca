@@ -1,5 +1,5 @@
 import { toast } from 'sonner'
-import type { AgentSessionHandleProvider } from '../../../shared/agent-session-provider-handle'
+import type { TuiAgent } from '../../../shared/tui-agent'
 import type { ExecutionHostId } from '../../../shared/execution-host'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
@@ -45,7 +45,7 @@ type AdmittedLaunch = {
 const DELIVERED: StructuredPromptDeliveryResult = { delivered: true, failureNotified: false }
 const NOT_DELIVERED: StructuredPromptDeliveryResult = { delivered: false, failureNotified: false }
 
-function notifyHostDeclined(agent: AgentSessionHandleProvider): void {
+function notifyHostDeclined(agent: TuiAgent): void {
   const agentLabel = structuredAgentLabel(agent)
   toast.info(
     translate(
@@ -63,10 +63,7 @@ function notifyHostDeclined(agent: AgentSessionHandleProvider): void {
   )
 }
 
-function notifyHostUnreachable(
-  agent: AgentSessionHandleProvider,
-  executionHostId: ExecutionHostId
-): void {
+function notifyHostUnreachable(agent: TuiAgent, executionHostId: ExecutionHostId): void {
   const hostLabel = selectExecutionHostDisplayLabel(useAppStore.getState(), executionHostId)
   toast.error(
     translate(
@@ -109,6 +106,7 @@ export async function openDeclinedStructuredLaunchTerminal(args: {
     ...(args.plan.prompt ? { prompt: args.plan.prompt } : {}),
     ...(args.plan.promptDelivery ? { promptDelivery: args.plan.promptDelivery } : {}),
     ...(args.plan.onPromptDelivered ? { onPromptDelivered: args.plan.onPromptDelivered } : {}),
+    ...(args.plan.promptKeptByCaller ? { promptKeptByCaller: true as const } : {}),
     agentSessionLaunchPlan: adoptAgentSessionLaunchVerdict({
       route: 'terminal-tui',
       requestId: args.plan.requestId,
@@ -129,7 +127,7 @@ export async function openDeclinedStructuredLaunchTerminal(args: {
  * equivalent, fails); unreachable opens nothing and says so. There is nothing to undo either way.
  */
 export function beginPairedStructuredLaunch(args: {
-  plan: AgentSessionLaunchPlan & { agent: AgentSessionHandleProvider }
+  plan: AgentSessionLaunchPlan & { agent: TuiAgent }
   hooks: StructuredAgentLaunchHooks
   worktreeId: string
   executionHostId: ExecutionHostId

@@ -1,8 +1,6 @@
 import { cn } from '@/lib/utils'
-import {
-  NATIVE_CHAT_APPEARANCE_ROOT_CLASS,
-  useNativeChatAppearanceStyle
-} from './native-chat-appearance-style'
+import { NATIVE_CHAT_APPEARANCE_ROOT_CLASS } from './native-chat-appearance-style'
+import { useNativeChatStoreAppearanceStyle } from './use-native-chat-store-appearance-style'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNativeChatComposerRevealFocus } from './use-native-chat-composer-reveal-focus'
 import { useAppStore } from '../../store'
@@ -11,6 +9,10 @@ import { useNativeChatRetainedSession } from './use-native-chat-retained-session
 import { isNativeChatTranscriptUnsettled } from './native-chat-live-session-contract'
 import { selectNativeChatViewState } from './native-chat-view-state'
 import { NativeChatMessageList } from './NativeChatMessageList'
+import {
+  useNativeChatInteractiveSendReveal,
+  useNativeChatRevealLatest
+} from './use-native-chat-reveal-latest'
 import { useNativeChatLaunchPromptDeliveryNotice } from './use-native-chat-launch-prompt-delivery-notice'
 import { NativeChatComposer, type NativeChatComposerHandle } from './NativeChatComposer'
 import { useNativeChatFontSize } from './use-native-chat-font-size'
@@ -118,7 +120,10 @@ export function NativeChatResolvedView({
   const canSend = useNativeChatCanSend(targetPtyId)
   // Reuse the verified composer send path for interactive cards and composer
   // stop (Stop sends ESC, the agent-TUI interrupt key).
-  const interactiveSend = useNativeChatInteractiveSend(terminalTabId, paneKey, targetPtyId, agent)
+  const send = useNativeChatInteractiveSend(terminalTabId, paneKey, targetPtyId, agent)
+  // Every send this pane makes brings the latest into view, wherever the reader had scrolled.
+  const { messageListRef, revealLatest } = useNativeChatRevealLatest()
+  const interactiveSend = useNativeChatInteractiveSendReveal(send, targetPtyId, revealLatest)
   const [workingInterrupted, setWorkingInterrupted] = useState(false)
   const previousWorkingEpochRef = useRef<number | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -134,6 +139,7 @@ export function NativeChatResolvedView({
   })
   const contextMenu = useNativeChatContextMenu({
     rootRef,
+    enabled: isVisible,
     onSwitchToTerminal,
     splitShortcutLabels: {
       right: formatShortcutLabel('terminal.splitRight', keybindings),
@@ -230,8 +236,7 @@ export function NativeChatResolvedView({
     canSend,
     transcriptSettled: session.readPhase === 'ready'
   })
-  const shownPromptCard = promptCardPresentation.card
-  const collapsedCard = promptCardPresentation.collapsedCard
+  const { card: shownPromptCard, collapsedCard } = promptCardPresentation
   const mountedPromptCard = shownPromptCard ?? collapsedCard
   useNativeChatComposerRevealFocus({
     rootRef,
@@ -327,8 +332,7 @@ export function NativeChatResolvedView({
 
   // Only the focused conversation accepts chat text-size shortcuts.
   useNativeChatFontSize(isConversation && isVisible && isFocusedGroup, rootRef)
-  const appearanceSettings = useAppStore((state) => state.settings?.nativeChatAppearance)
-  const appearanceStyle = useNativeChatAppearanceStyle({ nativeChatAppearance: appearanceSettings })
+  const appearanceStyle = useNativeChatStoreAppearanceStyle()
 
   return (
     <div
@@ -337,9 +341,8 @@ export function NativeChatResolvedView({
       data-native-chat-working={isWorking ? 'true' : 'false'}
       tabIndex={-1}
       onPointerDownCapture={(event) => {
+        contextMenu.onPointerDownCapture(event)
         if (event.button === 2) {
-          contextMenu.onSelectionCapture()
-          event.preventDefault()
           event.stopPropagation()
           return
         }
@@ -363,14 +366,13 @@ export function NativeChatResolvedView({
         }
         routeNativeChatRootKeyToInput(event, composerRef.current, questionAnswerInputRef.current)
       }}
-      onMouseUpCapture={contextMenu.onSelectionCapture}
-      onKeyUpCapture={contextMenu.onSelectionCapture}
       onContextMenuCapture={contextMenu.onContextMenuCapture}
       className={cn(
         NATIVE_CHAT_APPEARANCE_ROOT_CLASS,
         'flex h-full min-h-0 w-full flex-col focus:outline-none'
       )}
       style={appearanceStyle}
+      data-native-chat-scheme={appearanceStyle.colorScheme}
     >
       <div className="flex min-h-0 flex-1 flex-col">
         {viewState.kind === 'loading' ? (
@@ -381,6 +383,7 @@ export function NativeChatResolvedView({
           <NativeChatEmptyState kind="empty" agent={agent} />
         ) : (
           <NativeChatMessageList
+            ref={messageListRef}
             session={sessionWithPending}
             isVisible={isVisible}
             isWorking={turnActive}
@@ -429,10 +432,12 @@ export function NativeChatResolvedView({
           onOptimisticSendCanceled={delivery.cancel}
           optimisticSendOutcome={delivery}
           onSlashCommand={onSlashCommand}
+          onSubmitted={revealLatest}
           answerCommandLocally={answerLocally}
           onSwitchToTerminal={onSwitchToTerminal}
           readTerminalScreen={readTerminalScreen}
           launchSeed={{ ...launchDraftSignal, ownsTabWideLaunchDraft }}
+          recallSource={{ messages: sessionWithPending.messages, commands: commandMarkers }}
         />
       </div>
       {contextMenu.menu}

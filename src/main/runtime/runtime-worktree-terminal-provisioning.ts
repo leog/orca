@@ -194,12 +194,14 @@ export async function provisionWorktreeTerminals(
     )
     // Why: "None" skipped the shell on the promise of a Setup tab; without one the workspace would have no terminal.
     if (shellSkippedForSetup && !setupSpawned) {
-      await host.createTerminal(args.worktreeSelector, surfacing).catch((fallbackError: unknown) => {
-        console.warn(
-          `[worktree-create] Failed to open a fallback terminal for ${args.worktreePath}:`,
-          fallbackError
-        )
-      })
+      await host
+        .createTerminal(args.worktreeSelector, surfacing)
+        .catch((fallbackError: unknown) => {
+          console.warn(
+            `[worktree-create] Failed to open a fallback terminal for ${args.worktreePath}:`,
+            fallbackError
+          )
+        })
     }
   }
   return { setupSpawned, setupTerminalHandle }
